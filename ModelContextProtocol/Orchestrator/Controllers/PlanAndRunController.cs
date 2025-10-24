@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Orchestrator.Models;
 using Orchestrator.Services;
+using Shared.Configuration;
 using System.Text;
 
 namespace Orchestrator.Controllers
@@ -11,11 +13,19 @@ namespace Orchestrator.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly AgentRegistry _agentRegistry;
+        private readonly IOptions<ServicesConfiguration> _servicesConfig;
+        private readonly IOptions<ToolConfiguration> _toolConfig;
 
-        public PlanAndRunController(IHttpClientFactory httpClientFactory, AgentRegistry agentRegistry)
+        public PlanAndRunController(
+            IHttpClientFactory httpClientFactory, 
+            AgentRegistry agentRegistry,
+            IOptions<ServicesConfiguration> servicesConfig,
+            IOptions<ToolConfiguration> toolConfig)
         {
             _httpClientFactory = httpClientFactory;
             _agentRegistry = agentRegistry;
+            _servicesConfig = servicesConfig;
+            _toolConfig = toolConfig;
         }
 
         [HttpPost]
@@ -24,11 +34,12 @@ namespace Orchestrator.Controllers
             if (string.IsNullOrWhiteSpace(request.RawLogs))
                 return BadRequest("RawLogs is required.");
 
-            // 1. Get registered agents
+            // 1. Get registered agents using configured tool names
             var agents = _agentRegistry.GetAll();
-            var sanitizer = agents.Find(a => a.Tools != null && a.Tools.Contains("sanitize"));
-            var analyzer = agents.Find(a => a.Tools != null && a.Tools.Contains("analyze"));
-            var reporter = agents.Find(a => a.Tools != null && a.Tools.Contains("generate-report"));
+            var toolConfig = _toolConfig.Value;
+            var sanitizer = agents.Find(a => a.Tools != null && a.Tools.Contains(toolConfig.Sanitize));
+            var analyzer = agents.Find(a => a.Tools != null && a.Tools.Contains(toolConfig.Analyze));
+            var reporter = agents.Find(a => a.Tools != null && a.Tools.Contains(toolConfig.GenerateReport));
             if (sanitizer == null || analyzer == null || reporter == null)
                 return StatusCode(500, "One or more required agents are not registered.");
 
@@ -37,7 +48,9 @@ namespace Orchestrator.Controllers
             // 2. Call Sanitizer
             string sanitizedLogs = request.RawLogs;
             var sanitizeReq = new { Text = request.RawLogs };
-            var sanitizeResp = await client.PostAsJsonAsync($"{sanitizer.Endpoint}/sanitize", sanitizeReq);
+            var sanitizeEndpoint = Environment.GetEnvironmentVariable("SANITIZER_ENDPOINT") 
+                ?? $"{sanitizer.Endpoint}/sanitize";
+            var sanitizeResp = await client.PostAsJsonAsync(sanitizeEndpoint, sanitizeReq);
             if (sanitizeResp.IsSuccessStatusCode)
             {
                 var sanitizeResult = await sanitizeResp.Content.ReadFromJsonAsync<SanitizeResponse>();
@@ -47,7 +60,9 @@ namespace Orchestrator.Controllers
             // 3. Call LogAnalyzer (which may call Sanitizer again)
             AnalyzeResponse? analysis = null;
             var analyzeReq = new { Logs = sanitizedLogs, UseSanitizer = false };
-            var analyzeResp = await client.PostAsJsonAsync($"{analyzer.Endpoint}/analyze", analyzeReq);
+            var analyzeEndpoint = Environment.GetEnvironmentVariable("ANALYZER_ENDPOINT") 
+                ?? $"{analyzer.Endpoint}/analyze";
+            var analyzeResp = await client.PostAsJsonAsync(analyzeEndpoint, analyzeReq);
             if (analyzeResp.IsSuccessStatusCode)
             {
                 analysis = await analyzeResp.Content.ReadFromJsonAsync<AnalyzeResponse>();
@@ -58,7 +73,9 @@ namespace Orchestrator.Controllers
             // 4. Call ReportGenerator
             GenerateReportResponse? report = null;
             var reportReq = new { analysis.Warnings, analysis.Errors, analysis.Critical };
-            var reportResp = await client.PostAsJsonAsync($"{reporter.Endpoint}/GenerateReport/report", reportReq);
+            var reportEndpoint = Environment.GetEnvironmentVariable("REPORT_ENDPOINT") 
+                ?? $"{reporter.Endpoint}/GenerateReport/report";
+            var reportResp = await client.PostAsJsonAsync(reportEndpoint, reportReq);
             if (reportResp.IsSuccessStatusCode)
             {
                 report = await reportResp.Content.ReadFromJsonAsync<GenerateReportResponse>();
