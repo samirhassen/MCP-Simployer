@@ -1,0 +1,72 @@
+services:
+  orchestrator:
+    build:
+      context: ./ModelContextProtocol
+      dockerfile: Orchestrator/Dockerfile
+    ports:
+      - "5131:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ORCHESTRATOR_PORT=5131
+    networks:
+      - mcp-network
+
+  log-analyzer:
+    build:
+      context: ./ModelContextProtocol
+      dockerfile: Agent.LogAnalyzer/Dockerfile
+    ports:
+      - "5074:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ORCHESTRATOR_URL=http://orchestrator:80/register
+      - AGENT_ENDPOINT=http://log-analyzer:80
+      - AGENT_NAME=LogAnalyzerAgent
+      - AGENT_DESCRIPTION=Analyzes logs for errors and warnings.
+      - SANITIZER_URL=http://sanitizer:80/sanitize
+    depends_on:
+      - orchestrator
+    networks:
+      - mcp-network
+
+  sanitizer:
+    build:
+      context: ./ModelContextProtocol
+      dockerfile: Agent.Sanitizer/Dockerfile
+    ports:
+      - "5197:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ORCHESTRATOR_URL=http://orchestrator:80/register
+      - AGENT_ENDPOINT=http://sanitizer:80
+      - AGENT_NAME=SanitizerAgent
+      - AGENT_DESCRIPTION=Sanitizes sensitive data from input.
+    depends_on:
+      - orchestrator
+    networks:
+      - mcp-network
+
+  report-generator:
+    build:
+      context: ./ModelContextProtocol
+      dockerfile: Agent.ReportGenerator/Dockerfile
+    ports:
+      - "5192:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ORCHESTRATOR_URL=http://orchestrator:80/register
+      - AGENT_ENDPOINT=http://report-generator:80
+      - AGENT_NAME=ReportGeneratorAgent
+      - AGENT_DESCRIPTION=Generates executive summaries and visual assets from analysis.
+    depends_on:
+      - orchestrator
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge

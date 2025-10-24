@@ -1,14 +1,25 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Options;
+using Shared.Configuration;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        // Configure services
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        
+        // Configure options
+        builder.Services.Configure<AgentConfiguration>(
+            builder.Configuration.GetSection("AgentConfiguration"));
+        builder.Services.Configure<LogAnalysisConfiguration>(
+            builder.Configuration.GetSection("LogAnalysis"));
+        
         var app = builder.Build();
 
         app.UseSwagger();
@@ -17,14 +28,23 @@ public class Program
         app.UseAuthorization();
         app.MapControllers();
 
-        // Agent registration logic
-        var orchestratorUrl = builder.Configuration["OrchestratorUrl"] ?? "http://localhost:5131/register";
+        // Agent registration logic using configuration
+        var agentConfig = app.Services.GetRequiredService<IOptions<AgentConfiguration>>().Value;
+        var orchestratorUrl = Environment.GetEnvironmentVariable("ORCHESTRATOR_URL") 
+            ?? agentConfig.OrchestratorUrl;
+        var agentEndpoint = Environment.GetEnvironmentVariable("AGENT_ENDPOINT") 
+            ?? agentConfig.Endpoint;
+        var agentName = Environment.GetEnvironmentVariable("AGENT_NAME") 
+            ?? agentConfig.Name;
+        var agentDescription = Environment.GetEnvironmentVariable("AGENT_DESCRIPTION") 
+            ?? agentConfig.Description;
+
         var agentInfo = new
         {
-            Name = "LogAnalyzerAgent",
-            Endpoint = "http://localhost:5074", // Update as needed
-            Tools = new[] { "analyze" },
-            Description = "Analyzes logs for errors and warnings."
+            Name = agentName,
+            Endpoint = agentEndpoint,
+            Tools = agentConfig.Tools,
+            Description = agentDescription
         };
 
         using (var client = new HttpClient())
@@ -38,7 +58,7 @@ public class Program
                 }
                 else
                 {
-                    Console.WriteLine("LogAnalyzer agent registered successfully.");
+                    Console.WriteLine($"{agentName} registered successfully.");
                 }
             }
             catch (Exception ex)
