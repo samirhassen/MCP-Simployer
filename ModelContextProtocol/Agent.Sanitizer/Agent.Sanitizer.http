@@ -1,0 +1,6 @@
+@Agent.Sanitizer_HostAddress = http://localhost:5197
+
+GET {{Agent.Sanitizer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,89 @@
+{
+  "info": {
+    "_postman_id": "b1e2c3d4-5678-1234-9abc-def012345678",
+    "name": "Project Chimera API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sanitizer - Sanitize Text",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Contact: alice.smith@company.com, phone: 555-123-4567\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5197/sanitize",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5197",
+          "path": ["sanitize"]
+        }
+      }
+    },
+    {
+      "name": "LogAnalyzer - Analyze Logs",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"logs\": \"warning: disk space low\\nerror: failed to connect\\ncritical: system halt\",\n  \"useSanitizer\": false\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5074/analyze",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5074",
+          "path": ["analyze"]
+        }
+      }
+    },
+    {
+      "name": "ReportGenerator - Generate Report",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"warnings\": 2,\n  \"errors\": 1,\n  \"critical\": 1\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5192/GenerateReport/report",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5192",
+          "path": ["GenerateReport","report"]
+        }
+      }
+    },
+    {
+      "name": "Orchestrator - Plan and Run",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rawLogs\": \"bob@domain.com warning: cpu high error: disk full\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5131/planandrun",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5131",
+          "path": ["planandrun"]
+        }
+      }
+    }
+  ]
+}

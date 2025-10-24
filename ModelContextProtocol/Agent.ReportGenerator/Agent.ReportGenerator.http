@@ -1,0 +1,6 @@
+@Agent.ReportGenerator_HostAddress = http://localhost:5192
+
+GET {{Agent.ReportGenerator_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

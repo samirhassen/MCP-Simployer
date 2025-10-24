@@ -1,0 +1,6 @@
+@Agent.LogAnalyzer_HostAddress = http://localhost:5074
+
+GET {{Agent.LogAnalyzer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

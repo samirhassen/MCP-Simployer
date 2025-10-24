@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "NUNMpiqqxZg=",
+  "success": true,
+  "projectFilePath": "/Users/samirhassen/Repositories/MCP-haile/ModelContextProtocol/Agent.Sanitizer/Agent.Sanitizer.csproj",
+  "expectedPackageFiles": [
+    "/Users/samirhassen/.nuget/packages/microsoft.aspnetcore.openapi/9.0.7/microsoft.aspnetcore.openapi.9.0.7.nupkg.sha512",
+    "/Users/samirhassen/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
